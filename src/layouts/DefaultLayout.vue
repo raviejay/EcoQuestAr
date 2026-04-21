@@ -21,22 +21,19 @@
     </main>
 
   <!-- Bottom Nav -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center py-2 z-10">
-      <RouterLink to="/dashboard" class="flex flex-col items-center gap-0.5 text-xs px-3" active-class="text-green-600" inactive-class="text-gray-400">
-        <span class="text-xl">🏠</span>Home
-      </RouterLink>
-      <RouterLink to="/camera" class="flex flex-col items-center gap-0.5 text-xs px-3" active-class="text-green-600" inactive-class="text-gray-400">
-        <span class="text-xl">📷</span>Scan
-      </RouterLink>
-      <RouterLink to="/leaderboard" class="flex flex-col items-center gap-0.5 text-xs px-3" active-class="text-green-600" inactive-class="text-gray-400">
-        <span class="text-xl">🏆</span>Ranks
-      </RouterLink>
-      <RouterLink to="/rewards" class="flex flex-col items-center gap-0.5 text-xs px-3" active-class="text-green-600" inactive-class="text-gray-400">
-        <span class="text-xl">🎁</span>Rewards
-      </RouterLink>
-      <RouterLink to="/map" class="flex flex-col items-center gap-0.5 text-xs px-3" active-class="text-green-600" inactive-class="text-gray-400">
-        <span class="text-xl">🗺️</span>Map
-      </RouterLink>
+<nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around items-center py-2 z-10 shadow-lg">
+      <RouterLink to="/dashboard"   class="flex flex-col items-center gap-0.5 text-xs px-2 py-1 rounded-xl transition" active-class="font-bold" inactive-class="text-gray-400"
+        :style="$route.path==='/dashboard' ? 'color:#6EAE21' : ''"><span class="text-xl">🏠</span>Home</RouterLink>
+      <RouterLink to="/camera"      class="flex flex-col items-center gap-0.5 text-xs px-2 py-1 rounded-xl transition" active-class="font-bold" inactive-class="text-gray-400"
+        :style="$route.path==='/camera' ? 'color:#6EAE21' : ''"><span class="text-xl">📷</span>Scan</RouterLink>
+      <RouterLink to="/leaderboard" class="flex flex-col items-center gap-0.5 text-xs px-2 py-1 rounded-xl transition" active-class="font-bold" inactive-class="text-gray-400"
+        :style="$route.path==='/leaderboard' ? 'color:#6EAE21' : ''"><span class="text-xl">🏆</span>Ranks</RouterLink>
+      <RouterLink to="/rewards"     class="flex flex-col items-center gap-0.5 text-xs px-2 py-1 rounded-xl transition" active-class="font-bold" inactive-class="text-gray-400"
+        :style="$route.path==='/rewards' ? 'color:#6EAE21' : ''"><span class="text-xl">🎁</span>Rewards</RouterLink>
+      <RouterLink to="/map"         class="flex flex-col items-center gap-0.5 text-xs px-2 py-1 rounded-xl transition" active-class="font-bold" inactive-class="text-gray-400"
+        :style="$route.path==='/map' ? 'color:#6EAE21' : ''"><span class="text-xl">🗺️</span>Map</RouterLink>
+      <RouterLink v-if="authStore.profile?.is_admin" to="/admin" class="flex flex-col items-center gap-0.5 text-xs px-2 py-1 rounded-xl transition" inactive-class="text-gray-400"
+        :style="$route.path==='/admin' ? 'color:#086A9C; font-weight:bold' : ''"><span class="text-xl">🛡️</span>Admin</RouterLink>
     </nav>
   </div>
 </template>

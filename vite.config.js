@@ -10,12 +10,11 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "apple-touch-icon.png", "mask-icon.svg"],
       manifest: {
         name: "EcoQuest AR",
         short_name: "EcoQuest",
         description:
-          "AI-powered trash detection and gamified environmental engagement platform",
+          "AI-powered trash detection and gamified environmental engagement",
         theme_color: "#16a34a",
         background_color: "#ffffff",
         display: "standalone",
@@ -33,29 +32,23 @@ export default defineConfig({
             sizes: "512x512",
             type: "image/png",
           },
-          {
-            src: "icons/icon-512x512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "any maskable",
-          },
-        ],
-      },
-      workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/api\.supabase\.co\/.*/i,
-            handler: "NetworkFirst",
-            options: { cacheName: "supabase-api-cache" },
-          },
         ],
       },
     }),
   ],
   resolve: {
-    alias: {
-      "@": fileURLToPath(new URL("./src", import.meta.url)),
+    alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
+  },
+  server: {
+    proxy: {
+      // Proxy /roboflow/* → https://serverless.roboflow.com/*
+      // This bypasses CORS because the request comes from Node, not the browser
+      "/roboflow": {
+        target: "https://serverless.roboflow.com",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/roboflow/, ""),
+        secure: true,
+      },
     },
   },
 });
