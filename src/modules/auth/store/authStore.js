@@ -63,31 +63,52 @@ export const useAuthStore = defineStore("auth", () => {
     }
   }
 
-  async function initAuth() {
-    try {
-      const session = await authService.getSession();
-      if (session?.user) {
-        user.value = session.user;
-        await fetchProfile(session.user.id);
-      }
-
-      authService.onAuthStateChange(async (session) => {
-        user.value = session?.user ?? null;
-        if (session?.user) {
-          await fetchProfile(session.user.id);
-        } else {
-          profile.value = null;
-        }
-      });
-    } catch {
-      user.value = null;
-      profile.value = null;
+ async function initAuth() {
+  try {
+    const session = await authService.getSession()
+    if (session?.user) {
+      user.value = session.user
+      await fetchProfile(session.user.id)
     }
+  } catch {
+    user.value = null
+    profile.value = null
   }
+}
+
+function startAuthListener() {
+  authService.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+      user.value = session?.user ?? null
+      if (session?.user) await fetchProfile(session.user.id)
+    }
+    if (event === 'SIGNED_OUT') {
+      user.value = null
+      profile.value = null
+    }
+  })
+}
+
+async function loginBySchoolId({ schoolId, password }) {
+  loading.value = true
+  error.value = null
+  try {
+    const data = await authService.loginBySchoolId({ schoolId, password })
+    user.value = data.user
+    await fetchProfile(data.user.id)
+  } catch (err) {
+    error.value = err.message
+    throw err
+  } finally {
+    loading.value = false
+  }
+}
 
   function clearError() {
     error.value = null;
   }
+
+  
 
   return {
     user,
@@ -101,5 +122,7 @@ export const useAuthStore = defineStore("auth", () => {
     logout,
     initAuth,
     clearError,
+  startAuthListener,
+  loginBySchoolId,
   };
 });

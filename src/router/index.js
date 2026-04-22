@@ -31,6 +31,7 @@ const routes = [
         name: "Camera",
         component: () => import("@/modules/camera/components/CameraView.vue"),
       },
+       { path:'profile',     name:'Profile',     component:()=>import('@/modules/auth/views/ProfileView.vue') },
       {
         path: "leaderboard",
         name: "Leaderboard",

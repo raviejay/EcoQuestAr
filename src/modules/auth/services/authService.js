@@ -60,9 +60,9 @@ export const authService = {
     return data;
   },
 
-  onAuthStateChange(callback) {
-    return supabase.auth.onAuthStateChange((_event, session) =>
-      callback(session),
-    );
-  },
+ onAuthStateChange(callback) {
+  return supabase.auth.onAuthStateChange((event, session) =>
+    callback(event, session)   // ← pass event too
+  )
+}
 };
