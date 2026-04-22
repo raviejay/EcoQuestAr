@@ -81,7 +81,7 @@
       </div>
 
       <!-- Bottom version -->
-      <p class="absolute bottom-8 text-xs font-mono" style="color:#6EAE2140">v1.0.0 · EcoQuest AR</p>
+      <p class="absolute bottom-8 text-xs font-mono" style="color:#6EAE2140">v1.0.0 · Made by CodenameShan</p>
     </div>
   </Transition>
 </template>
