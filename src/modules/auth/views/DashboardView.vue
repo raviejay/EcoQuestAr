@@ -6,10 +6,21 @@
       <div class="flex items-center justify-between mb-4">
         <div>
           <p class="text-sm opacity-80">Welcome back,</p>
-          <p class="text-xl font-black">{{ authStore.displayName }} 🌿</p>
+         <p class="text-xl font-black flex items-center gap-2 flex-wrap">
+            {{ authStore.displayName }}
+
+            <span
+              v-if="authStore.profile?.school_id"
+              class="text-xs font-bold px-2 py-0.5 rounded-full bg-white/20 border border-white/30 backdrop-blur"
+            >
+              {{ authStore.profile.school_id }}
+            </span>
+
+            🌿
+          </p>
         </div>
-        <img src="/logo.png" alt="Logo" class="h-10 object-contain"
-          onerror="this.style.display='none'" />
+        <!-- <img src="/logo.png" alt="Logo" class="h-10 object-contain"
+          onerror="this.style.display='none'" /> -->
       </div>
 
       <!-- Stats row -->

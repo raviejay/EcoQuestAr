@@ -4,7 +4,7 @@
     <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8">
 
       <div class="flex flex-col items-center mb-6">
-        <img src="/logo.png" alt="EcoQuest Logo" class="h-14 mb-2 object-contain"
+        <img src="/logo2.png" alt="EcoQuest Logo" class="h-14 mb-2 object-contain"
           onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'" />
         <div class="hidden w-14 h-14 rounded-2xl items-center justify-center mb-2" style="background:#6EAE21">
           <span class="text-2xl">♻️</span>

@@ -38,7 +38,7 @@
           <!-- Logo image -->
           <div class="relative w-28 h-28 rounded-3xl overflow-hidden flex items-center justify-center shadow-2xl border-2"
             style="background:linear-gradient(135deg,#0d2b10,#061520);border-color:#6EAE21">
-            <img src="/logo.png" alt="EcoQuest" class="w-24 h-24 object-contain"
+            <img src="/logo2.png" alt="EcoQuest" class="w-24 h-24 object-contain"
               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'" />
             <div class="hidden w-full h-full items-center justify-center text-5xl">♻️</div>
           </div>

@@ -6,14 +6,14 @@
 
       <!-- Logo -->
       <div class="flex flex-col items-center mb-8">
-        <img src="/logo.png" alt="EcoQuest Logo" class="h-16 mb-3 object-contain"
+        <img src="/logo.svg" alt="EcoQuest Logo" class="h-16 mb-3 object-contain"
           onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'" />
         <!-- Fallback logo -->
         <div class="hidden w-16 h-16 rounded-2xl items-center justify-center mb-3"
           style="background:#6EAE21">
           <span class="text-3xl">♻️</span>
         </div>
-        <h1 class="text-2xl font-black" style="color:#086A9C">EcoQuest AR</h1>
+        <!-- <h1 class="text-2xl font-black" style="color:#086A9C">EcoQuest AR</h1> -->
         <p class="text-gray-400 text-sm mt-0.5">Caraga State University</p>
       </div>
 

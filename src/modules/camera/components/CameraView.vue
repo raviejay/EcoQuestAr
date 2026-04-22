@@ -1,5 +1,5 @@
 <template>
-  <div class="relative w-full bg-black overflow-hidden" style="height:100dvh;">
+ <div class="relative w-full h-full flex-1 bg-black overflow-hidden">
     <video ref="videoRef" class="absolute inset-0 w-full h-full object-cover" autoplay playsinline muted />
     <canvas ref="canvasRef" class="absolute inset-0 w-full h-full pointer-events-none" />
 
