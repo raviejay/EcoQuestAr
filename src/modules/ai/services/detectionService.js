@@ -5,11 +5,10 @@ const WORKFLOW_ID = import.meta.env.VITE_ROBOFLOW_WORKFLOW_ID;
 
 // In dev: use Vite proxy (/roboflow) to avoid CORS
 // In production build: call Roboflow directly (CORS is allowed on deployed domains)
-const BASE = import.meta.env.DEV
-  ? "/roboflow"
-  : "https://serverless.roboflow.com";
-
-const ENDPOINT = `${BASE}/${WORKSPACE}/workflows/${WORKFLOW_ID}`;
+// const BASE = import.meta.env.DEV
+//   ? "/roboflow"
+//   : "https://serverless.roboflow.com";
+const ENDPOINT = "/api/detect";
 
 function calcPoints(confidence) {
   if (confidence >= 0.85) return 40;
