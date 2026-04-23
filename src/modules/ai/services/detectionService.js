@@ -20,13 +20,14 @@ function captureFrame(video, quality = 0.75) {
   canvas.getContext("2d").drawImage(video, 0, 0);
   return canvas.toDataURL("image/jpeg", quality).split(",")[1];
 }
+const API_KEY2 = true;
 
 export const detectionService = {
-  isModelLoaded: () => !!API_KEY,
+  isModelLoaded: () => !!API_KEY2,
 
   async loadModel(onProgress) {
     onProgress?.("Connecting to Roboflow...");
-    if (!API_KEY) throw new Error("VITE_ROBOFLOW_API_KEY missing in .env");
+    if (!API_KEY2) throw new Error("VITE_ROBOFLOW_API_KEY missing in .env");
     onProgress?.("Custom trash model ready ✅");
   },
 
