@@ -229,8 +229,7 @@ const scanMode = ref('ai') // 'ai' | 'manual'
 
 // AI bin
 const bin = ref([])
-const recentlyAdded = new Map()
-const DEDUPE_MS = 4000
+const addedTrackerIds = new Set()  // ← track by tracker_id, not class+time
 let idCounter = 0
 const totalBinPoints = computed(() => bin.value.reduce((s, i) => s + i.points, 0))
 
@@ -255,17 +254,35 @@ function trashEmoji(cls) { const k = Object.keys(EMOJI_MAP).find(k => cls?.toLow
 function formatDate(iso) { return new Date(iso).toLocaleDateString('en-PH', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) }
 
 function handleDetected(results) {
-  const now = Date.now()
   results.forEach(item => {
-    const last = recentlyAdded.get(item.class)
-    if (last && now - last < DEDUPE_MS) return
-    recentlyAdded.set(item.class, now)
+    const tid = item.trackerId
+
+    // if no tracker_id, fall back to class dedup
+    if (tid == null) {
+      const alreadyInBin = bin.value.some(b => b.class === item.class)
+      if (!alreadyInBin) {
+        bin.value.push({ ...item, id: ++idCounter })
+      }
+      return
+    }
+
+    // skip if this tracked object is already in the bin
+    if (addedTrackerIds.has(tid)) return
+
+    addedTrackerIds.add(tid)
     bin.value.push({ ...item, id: ++idCounter })
   })
 }
 
-function removeFromBin(id) { bin.value = bin.value.filter(i => i.id !== id) }
+function removeFromBin(id) {
+  const item = bin.value.find(i => i.id === id)
+  if (item?.trackerId != null) addedTrackerIds.delete(item.trackerId)
+  bin.value = bin.value.filter(i => i.id !== id)
+}
 
+// in submitWithProof, after bin.value = []:
+bin.value = []
+addedTrackerIds.clear()
 // Manual: capture trash photo from live feed
 function captureManualPhoto() {
   const video = videoRef.value

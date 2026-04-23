@@ -1,4 +1,3 @@
-// file: src/modules/ai/composables/useDetection.js
 import { ref, onUnmounted } from "vue";
 import { detectionService } from "@/modules/ai/services/detectionService.js";
 
@@ -12,13 +11,14 @@ export function useDetection() {
   const totalDetected = ref(0);
   const sessionPoints = ref(0);
   const liveCount = ref(0);
+  const annotatedImageRef = ref(null);
 
-  // 1 request/sec — serverless Roboflow has cold-start latency
   const DETECTION_INTERVAL_MS = 1000;
 
   let animationId = null;
   let lastDetectionTime = 0;
   let inFlight = false;
+  let cachedAnnotatedImg = null; // ← reuse Image object instead of recreating
 
   async function loadModel() {
     if (modelReady.value) return;
@@ -36,7 +36,7 @@ export function useDetection() {
     }
   }
 
-  function drawDetections(canvas, video, results) {
+  function drawDetections(canvas, video, results, annotatedImage) {
     if (!canvas || !video) return;
     const ctx = canvas.getContext("2d");
 
@@ -44,26 +44,43 @@ export function useDetection() {
     canvas.width = rect.width;
     canvas.height = rect.height;
 
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // draw cached annotated image if available — no distortion
+    if (cachedAnnotatedImg?.complete) {
+      // draw with object-fit: cover behavior to match the video element
+      const imgW = cachedAnnotatedImg.naturalWidth;
+      const imgH = cachedAnnotatedImg.naturalHeight;
+      const canvasW = canvas.width;
+      const canvasH = canvas.height;
+
+      const scale = Math.max(canvasW / imgW, canvasH / imgH);
+      const drawW = imgW * scale;
+      const drawH = imgH * scale;
+      const offsetX = (canvasW - drawW) / 2;
+      const offsetY = (canvasH - drawH) / 2;
+
+      ctx.drawImage(cachedAnnotatedImg, offsetX, offsetY, drawW, drawH);
+      return;
+    }
+
+    // fallback: manual box drawing
     const scaleX = rect.width / video.videoWidth;
     const scaleY = rect.height / video.videoHeight;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    results.forEach(({ bbox, class: label, score, points }) => {
+    results.forEach(({ bbox, class: label, score, points, trackerId }) => {
       const [bx, by, bw, bh] = bbox;
       const x = bx * scaleX;
       const y = by * scaleY;
       const w = bw * scaleX;
       const h = bh * scaleY;
 
-      // Glow
       ctx.shadowColor = "#22c55e";
       ctx.shadowBlur = 14;
       ctx.strokeStyle = "#22c55e";
       ctx.lineWidth = 3;
       ctx.strokeRect(x, y, w, h);
 
-      // Corner accents
       const cs = 18;
       ctx.lineWidth = 5;
       [
@@ -84,9 +101,8 @@ export function useDetection() {
 
       ctx.shadowBlur = 0;
 
-      // Label
       const pct = Math.round(score * 100);
-      const text = `🗑 ${label}  ${pct}%  +${points}pts`;
+      const text = `🗑 ${label}${trackerId ? ` #${trackerId}` : ""}  ${pct}%  +${points}pts`;
       ctx.font = "bold 13px sans-serif";
       const tw = ctx.measureText(text).width;
       const lx = x;
@@ -105,6 +121,7 @@ export function useDetection() {
     if (!modelReady.value) return;
     isDetecting.value = true;
     let lastResults = [];
+    let lastAnnotated = null;
 
     async function loop(timestamp) {
       if (!isDetecting.value) return;
@@ -113,11 +130,23 @@ export function useDetection() {
         lastDetectionTime = timestamp;
         inFlight = true;
         try {
-          const { predictions, count } =
+          const { predictions, count, annotatedImage } =
             await detectionService.detect(videoElement);
+
           lastResults = predictions;
+          lastAnnotated = annotatedImage;
+          annotatedImageRef.value = annotatedImage;
           detections.value = predictions;
           liveCount.value = count;
+
+          // pre-load the image once so it's ready for next draw call
+          if (annotatedImage) {
+            const img = new Image();
+            img.src = `data:image/jpeg;base64,${annotatedImage}`;
+            cachedAnnotatedImg = img;
+          } else {
+            cachedAnnotatedImg = null;
+          }
 
           if (predictions.length > 0) {
             totalDetected.value += predictions.length;
@@ -134,7 +163,7 @@ export function useDetection() {
         }
       }
 
-      drawDetections(canvasRef.value, videoElement, lastResults);
+      drawDetections(canvasRef.value, videoElement, lastResults, lastAnnotated);
       animationId = requestAnimationFrame(loop);
     }
 
@@ -147,6 +176,7 @@ export function useDetection() {
       cancelAnimationFrame(animationId);
       animationId = null;
     }
+    cachedAnnotatedImg = null;
     if (canvasRef.value) {
       canvasRef.value
         .getContext("2d")
@@ -154,6 +184,7 @@ export function useDetection() {
     }
     detections.value = [];
     liveCount.value = 0;
+    annotatedImageRef.value = null;
   }
 
   onUnmounted(() => stopDetection());
@@ -168,6 +199,7 @@ export function useDetection() {
     totalDetected,
     sessionPoints,
     liveCount,
+    annotatedImageRef,
     loadModel,
     startDetection,
     stopDetection,

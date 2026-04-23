@@ -1,14 +1,10 @@
-// file: src/modules/ai/services/detectionService.js
 const API_KEY = import.meta.env.VITE_ROBOFLOW_API_KEY;
 const WORKSPACE = import.meta.env.VITE_ROBOFLOW_WORKSPACE;
 const WORKFLOW_ID = import.meta.env.VITE_ROBOFLOW_WORKFLOW_ID;
 
-// In dev: use Vite proxy (/roboflow) to avoid CORS
-// In production build: call Roboflow directly (CORS is allowed on deployed domains)
-// const BASE = import.meta.env.DEV
-//   ? "/roboflow"
-//   : "https://serverless.roboflow.com";
-const ENDPOINT = "/api/detect";
+const ENDPOINT = import.meta.env.DEV
+  ? `/roboflow/${WORKSPACE}/workflows/${WORKFLOW_ID}`
+  : `/api/detect`;
 
 function calcPoints(confidence) {
   if (confidence >= 0.85) return 40;
@@ -36,38 +32,54 @@ export const detectionService = {
 
   async detect(videoElement) {
     if (!videoElement || videoElement.readyState < 2)
-      return { predictions: [], count: 0 };
-    if (videoElement.videoWidth === 0) return { predictions: [], count: 0 };
+      return { predictions: [], count: 0, annotatedImage: null };
+    if (videoElement.videoWidth === 0)
+      return { predictions: [], count: 0, annotatedImage: null };
 
     try {
       const response = await fetch(ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          api_key: API_KEY,
-          inputs: {
-            image: { type: "base64", value: captureFrame(videoElement) },
-          },
-        }),
+        body: JSON.stringify(
+          import.meta.env.DEV
+            ? {
+                api_key: API_KEY,
+                inputs: {
+                  image: { type: "base64", value: captureFrame(videoElement) },
+                },
+              }
+            : {
+                inputs: {
+                  image: { type: "base64", value: captureFrame(videoElement) },
+                },
+              },
+        ),
       });
 
       if (!response.ok) {
         console.warn("Roboflow error:", response.status, await response.text());
-        return { predictions: [], count: 0 };
+        return { predictions: [], count: 0, annotatedImage: null };
       }
 
       const result = await response.json();
-      const outputs = result?.outputs?.[0] ?? {};
-      const raw = outputs?.predictions?.predictions ?? [];
-      const count = outputs?.count_objects ?? raw.length;
+
+      // response is wrapped in outputs[0]
+      const output = result?.outputs?.[0] ?? {};
+
+      // annotated_image is { type: "base64", value: "..." }
+      const annotatedImage = output?.annotated_image?.value ?? null;
+
+      // tracked_detections.predictions
+      const raw = output?.tracked_detections?.predictions ?? [];
 
       return {
         predictions: raw.map((p) => this.normalizePrediction(p)),
-        count,
+        count: raw.length,
+        annotatedImage,
       };
     } catch (err) {
       console.warn("Detection fetch error:", err.message);
-      return { predictions: [], count: 0 };
+      return { predictions: [], count: 0, annotatedImage: null };
     }
   },
 
@@ -76,6 +88,7 @@ export const detectionService = {
       bbox: [p.x - p.width / 2, p.y - p.height / 2, p.width, p.height],
       class: p.class ?? p.class_name ?? "trash",
       score: p.confidence ?? 1,
+      trackerId: p.tracker_id ?? null,
       isTrash: true,
       points: calcPoints(p.confidence ?? 1),
     };
