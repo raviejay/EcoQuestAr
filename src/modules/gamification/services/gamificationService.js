@@ -1,4 +1,3 @@
-// file: src/modules/gamification/services/gamificationService.js
 import { supabase } from "@/services/supabase/client.js";
 
 export const gamificationService = {
@@ -9,6 +8,7 @@ export const gamificationService = {
       .order("rank", { ascending: true })
       .limit(limit);
     if (error) throw error;
+    //console.log("leaderboard data:", data); // 👈 check this in browser console
     return data;
   },
 

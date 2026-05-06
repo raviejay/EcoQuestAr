@@ -86,10 +86,31 @@
                     <p class="text-gray-500 text-xs">{{ formatDate(s.submitted_at) }}</p>
                   </div>
                 </div>
-                <div class="flex gap-1.5 flex-wrap justify-end">
-                  <span v-if="s.submission_type==='manual'" class="text-xs font-bold px-2 py-0.5 rounded-full" style="background:#1e3a5f;color:#6DCEDA">Manual</span>
-                  <span :class="{'bg-yellow-500/20 text-yellow-400':s.status==='pending','bg-green-500/20 text-green-400':s.status==='approved','bg-red-500/20 text-red-400':s.status==='rejected'}" class="text-xs font-bold px-2 py-0.5 rounded-full uppercase">{{ s.status }}</span>
-                </div>
+              <div class="flex gap-1.5 flex-wrap justify-end">
+
+            <!-- SUBMISSION TYPE BADGE (ADD THIS) -->
+            <span
+              class="text-xs font-bold px-2 py-0.5 rounded-full"
+              :style="s.submission_type === 'manual'
+                ? 'background:#1e3a5f;color:#6DCEDA'
+                : 'background:#2d2d2d;color:#aaa'"
+            >
+              {{ s.submission_type === 'manual' ? 'Manual' : 'AI Detection' }}
+            </span>
+
+            <!-- STATUS BADGE (KEEP YOUR EXISTING ONE) -->
+            <span
+              :class="{
+                'bg-yellow-500/20 text-yellow-400': s.status==='pending',
+                'bg-green-500/20 text-green-400': s.status==='approved',
+                'bg-red-500/20 text-red-400': s.status==='rejected'
+              }"
+              class="text-xs font-bold px-2 py-0.5 rounded-full uppercase"
+            >
+              {{ s.status }}
+            </span>
+
+          </div>
               </div>
               <div class="flex flex-wrap gap-1.5 mb-3">
                 <span v-for="(item,i) in (s.detected_items||[])" :key="i" class="bg-gray-800 text-gray-300 text-xs px-2 py-1 rounded-full">
@@ -98,7 +119,20 @@
               </div>
               <div class="flex items-center justify-between mb-3">
                 <p class="text-xs text-gray-400">{{ s.latitude?`📍 ${s.latitude.toFixed(4)}, ${s.longitude.toFixed(4)}`:'No GPS' }}</p>
-                <p class="font-black text-lg" style="color:#6EAE21">+{{ s.total_points }}pts</p>
+            <div class="flex items-center gap-2">
+
+                <span class="font-black text-lg" style="color:#6EAE21">
+                  +{{ s.total_points }}pts
+                </span>
+
+                <input
+                  v-model.number="s.total_points"
+                  type="number"
+                  min="0"
+                  class="w-20 bg-gray-800 border border-gray-700 text-white text-xs px-2 py-1 rounded-lg"
+                />
+
+              </div>
               </div>
               <div v-if="s.status==='pending'" class="space-y-2">
                 <input v-model="notes[s.id]" type="text" placeholder="Optional note to user..." class="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none"/>
@@ -444,11 +478,28 @@ async function loadAll() {
 
 async function handleApprove(s) {
   reviewing.value = s.id
+
   try {
-    const r = await submissionApi.approveSubmission(s.id, authStore.user.id, notes.value[s.id]||'')
-    if (r?.success) { s.status='approved'; s.admin_note=notes.value[s.id]; s.reviewed_at=new Date().toISOString() }
-    else alert(r?.error??'Approval failed')
-  } catch(e){alert(e.message)} finally { reviewing.value=null }
+    const r = await submissionApi.approveSubmission(
+      s.id,
+      authStore.user.id,
+      notes.value[s.id] || '',
+      Number(s.total_points) // 🔥 FORCE UPDATED VALUE
+    )
+
+    if (r?.success) {
+      s.status = 'approved'
+      s.admin_note = notes.value[s.id]
+      s.reviewed_at = new Date().toISOString()
+    } else {
+      alert(r?.error ?? 'Approval failed')
+    }
+
+  } catch (e) {
+    alert(e.message)
+  } finally {
+    reviewing.value = null
+  }
 }
 async function handleReject(s) {
   reviewing.value = s.id

@@ -13,6 +13,8 @@ export const useAuthStore = defineStore("auth", () => {
     () => profile.value?.username ?? user.value?.email ?? "",
   );
 
+  const schoolId = computed(() => profile.value?.school_id);
+
   async function fetchProfile(userId) {
     try {
       profile.value = await authService.getProfile(userId); // null-safe now
@@ -117,6 +119,7 @@ async function loginBySchoolId({ schoolId, password }) {
     error,
     isAuthenticated,
     displayName,
+    schoolId,
     register,
     login,
     logout,

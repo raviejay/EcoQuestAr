@@ -6,7 +6,7 @@
     <!-- Top HUD -->
     <div class="absolute top-0 left-0 right-0 flex justify-between items-center px-4 pt-10 pb-4 bg-gradient-to-b from-black/70 to-transparent z-10">
       <div>
-        <p class="text-xs font-bold uppercase tracking-widest" style="color:#6DCEDA">EcoQuest AR</p>
+        <p class="text-xs font-bold uppercase tracking-widest" style="color:#6DCEDA">ECO QUEST</p>
         <p class="text-white text-sm font-semibold mt-0.5">Points: <span style="color:#6EAE21">{{ authStore.profile?.points ?? 0 }}</span></p>
       </div>
       <div @click="showHistory = true" class="text-right cursor-pointer">

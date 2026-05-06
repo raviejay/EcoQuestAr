@@ -76,15 +76,28 @@ export const submissionApi = {
     return subs.map((s) => ({ ...s, profiles: profileMap[s.user_id] ?? null }));
   },
 
-  async approveSubmission(submissionId, adminId, note = "") {
-    const { data, error } = await supabase.rpc("approve_submission", {
-      p_submission_id: submissionId,
-      p_admin_id: adminId,
-      p_note: note,
-    });
-    if (error) throw error;
-    return data;
-  },
+  async approveSubmission(submissionId, adminId, note = "", points = null) {
+  const updateData = {
+    status: "approved",
+    reviewed_by: adminId,
+    admin_note: note,
+    reviewed_at: new Date().toISOString(),
+  };
+
+  if (points !== null) {
+    updateData.total_points = points; // 🔥 THIS FIXES YOUR ISSUE
+  }
+
+  const { data, error } = await supabase
+    .from("submissions")
+    .update(updateData)
+    .eq("id", submissionId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+},
 
   async rejectSubmission(submissionId, adminId, note = "") {
     const { data, error } = await supabase.rpc("reject_submission", {

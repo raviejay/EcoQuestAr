@@ -16,7 +16,7 @@
       <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-xl font-black"
         style="background:rgba(255,255,255,0.2)">#{{ myRankData.rank }}</div>
       <div class="flex-1">
-        <p class="text-white font-black text-lg">{{ authStore.displayName }}</p>
+        <p class="text-white font-black text-lg">{{ authStore.displayName }} <span>({{ authStore.schoolId }})</span></p>
         <p class="text-xs mt-0.5" style="color:#a8f0c0">Lv.{{ myRankData.level }} · {{ myRankData.points.toLocaleString() }} pts</p>
       </div>
       <span class="text-3xl">{{ rankEmoji(myRankData.rank) }}</span>
@@ -32,9 +32,12 @@
       <div class="flex items-end justify-center gap-3">
         <!-- 2nd -->
         <div v-if="top3[1]" class="flex-1 flex flex-col items-center gap-1">
-          <div class="w-12 h-12 rounded-full flex items-center justify-center font-black text-lg border-2 border-gray-500" style="background:#374151;color:#9ca3af">
-            {{ top3[1].username?.charAt(0).toUpperCase() }}</div>
-          <p class="text-xs text-gray-400 font-semibold truncate max-w-[72px] text-center">{{ top3[1].username }}</p>
+          <div class="w-12 h-12 rounded-full border-2 border-gray-500 overflow-hidden flex items-center justify-center font-black text-lg"
+            style="background:#374151;color:#9ca3af">
+            <img v-if="top3[1].avatar_url" :src="top3[1].avatar_url" class="w-full h-full object-cover" />
+            <span v-else>{{ top3[1].username?.charAt(0).toUpperCase() }}</span>
+          </div>
+          <p class="text-xs text-gray-400 font-semibold truncate max-w-[72px] text-center">{{ top3[1].school_id }}</p>
           <p class="text-xs text-gray-500">{{ top3[1].points.toLocaleString() }}</p>
           <div class="w-full rounded-t-xl flex items-center justify-center text-2xl h-14" style="background:#1f2937">🥈</div>
         </div>
@@ -42,18 +45,24 @@
         <div v-if="top3[0]" class="flex-1 flex flex-col items-center gap-1">
           <div class="relative">
             <div class="absolute -inset-1 rounded-full animate-pulse" style="background:#6EAE2140"/>
-            <div class="relative w-16 h-16 rounded-full flex items-center justify-center font-black text-2xl border-4" style="background:#6EAE21;border-color:#a8f060;color:white">
-              {{ top3[0].username?.charAt(0).toUpperCase() }}</div>
+            <div class="relative w-16 h-16 rounded-full border-4 overflow-hidden flex items-center justify-center font-black text-2xl"
+              style="background:#6EAE21;border-color:#a8f060;color:white">
+              <img v-if="top3[0].avatar_url" :src="top3[0].avatar_url" class="w-full h-full object-cover" />
+              <span v-else>{{ top3[0].username?.charAt(0).toUpperCase() }}</span>
+            </div>
           </div>
-          <p class="text-xs font-black truncate max-w-[80px] text-center" style="color:#6EAE21">{{ top3[0].username }}</p>
+          <p class="text-xs font-black truncate max-w-[80px] text-center" style="color:#6EAE21">{{ top3[0].school_id }}</p>
           <p class="text-xs font-bold" style="color:#6EAE21">{{ top3[0].points.toLocaleString() }}</p>
           <div class="w-full rounded-t-xl flex items-center justify-center text-3xl h-20" style="background:linear-gradient(180deg,#6EAE2130,#1a2f0a)">🥇</div>
         </div>
         <!-- 3rd -->
         <div v-if="top3[2]" class="flex-1 flex flex-col items-center gap-1">
-          <div class="w-12 h-12 rounded-full flex items-center justify-center font-black text-lg border-2" style="background:#374151;border-color:#92400e;color:#d97706">
-            {{ top3[2].username?.charAt(0).toUpperCase() }}</div>
-          <p class="text-xs text-gray-400 font-semibold truncate max-w-[72px] text-center">{{ top3[2].username }}</p>
+          <div class="w-12 h-12 rounded-full border-2 overflow-hidden flex items-center justify-center font-black text-lg"
+            style="background:#374151;border-color:#92400e;color:#d97706">
+            <img v-if="top3[2].avatar_url" :src="top3[2].avatar_url" class="w-full h-full object-cover" />
+            <span v-else>{{ top3[2].username?.charAt(0).toUpperCase() }}</span>
+          </div>
+          <p class="text-xs text-gray-400 font-semibold truncate max-w-[72px] text-center">{{ top3[2].school_id }}</p>
           <p class="text-xs text-gray-500">{{ top3[2].points.toLocaleString() }}</p>
           <div class="w-full rounded-t-xl flex items-center justify-center text-xl h-10" style="background:#1f2937">🥉</div>
         </div>
@@ -67,12 +76,14 @@
         :style="entry.id === authStore.user?.id ? 'background:#6EAE2115;border-color:#6EAE2150' : 'background:#111a09'"
         class="flex items-center gap-3 rounded-2xl px-4 py-3">
         <span class="text-gray-500 font-black w-6 text-center text-sm">#{{ entry.rank }}</span>
-        <div class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0"
+        <div class="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center font-bold text-sm flex-shrink-0"
           style="background:#1a2f0a;color:#6EAE21">
-          {{ entry.username?.charAt(0).toUpperCase() }}</div>
+          <img v-if="entry.avatar_url" :src="entry.avatar_url" class="w-full h-full object-cover" />
+          <span v-else>{{ entry.username?.charAt(0).toUpperCase() }}</span>
+        </div>
         <div class="flex-1 min-w-0">
           <p class="font-semibold text-sm text-white truncate">
-            {{ entry.username }}
+            {{ entry.school_id }}
             <span v-if="entry.id === authStore.user?.id" class="text-xs ml-1" style="color:#6EAE21">(you)</span>
           </p>
           <p class="text-xs text-gray-500">Level {{ entry.level }}</p>
