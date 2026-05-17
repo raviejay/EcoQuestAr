@@ -56,28 +56,44 @@
       <p class="text-white font-semibold">{{ loadingMessage || 'Connecting to AI...' }}</p>
     </div>
 
-    <!-- Virtual Bin (AI mode) -->
+    <!-- Virtual Bin (AI mode) — grouped by class with count badges -->
     <div v-if="scanMode === 'ai'" class="absolute bottom-28 left-0 right-0 z-20 px-3">
       <div class="flex items-center justify-between mb-2 px-1">
         <div class="flex items-center gap-2">
           <span class="text-2xl">🗑️</span>
           <span class="text-white text-sm font-bold">Virtual Bin</span>
-          <span v-if="bin.length" class="text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center" style="background:#6EAE21">{{ bin.length }}</span>
+          <!-- total individual item count -->
+          <span v-if="totalBinCount" class="text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center" style="background:#6EAE21">{{ totalBinCount }}</span>
         </div>
-        <button v-if="bin.length" @click="openProofCapture('ai')"
+        <button v-if="groupedBin.length" @click="openProofCapture('ai')"
           class="text-white text-sm font-bold px-4 py-1.5 rounded-full shadow-lg transition flex items-center gap-1"
           style="background:#6EAE21">
           📸 Submit (+{{ totalBinPoints }}pts)
         </button>
       </div>
-      <div v-if="bin.length" class="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-        <div v-for="item in bin" :key="item.id" class="flex-shrink-0 bg-white/10 backdrop-blur border border-white/20 rounded-2xl px-3 py-2 flex flex-col items-center gap-1 min-w-[80px] relative">
-          <button @click="removeFromBin(item.id)" class="absolute -top-1.5 -right-1.5 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center font-bold">×</button>
-          <span class="text-2xl">{{ trashEmoji(item.class) }}</span>
-          <span class="text-white text-xs font-semibold capitalize text-center">{{ item.class }}</span>
-          <span class="text-xs font-bold" style="color:#6EAE21">+{{ item.points }}pts</span>
+
+      <!-- Grouped bin cards -->
+      <div v-if="groupedBin.length" class="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+        <div v-for="group in groupedBin" :key="group.class"
+          class="flex-shrink-0 bg-white/10 backdrop-blur border border-white/20 rounded-2xl px-3 py-2 flex flex-col items-center gap-1 min-w-[80px] relative">
+
+          <!-- Remove all of this class -->
+          <button @click="removeGroupFromBin(group.class)"
+            class="absolute -top-1.5 -right-1.5 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center font-bold z-10">×</button>
+
+          <!-- Count badge (only shown when > 1) -->
+          <div v-if="group.count > 1"
+            class="absolute -top-1.5 -left-1.5 text-white text-xs font-black w-5 h-5 rounded-full flex items-center justify-center z-10"
+            style="background:#086A9C">
+            {{ group.count }}
+          </div>
+
+          <span class="text-2xl">{{ trashEmoji(group.class) }}</span>
+          <span class="text-white text-xs font-semibold capitalize text-center leading-tight">{{ group.class }}</span>
+          <span class="text-xs font-bold" style="color:#6EAE21">+{{ group.totalPoints }}pts</span>
         </div>
       </div>
+
       <div v-else class="text-center py-1">
         <p class="text-gray-400 text-xs">AI detects trash → confirm by taking photo proof</p>
       </div>
@@ -144,10 +160,13 @@
       <!-- Items (AI mode) or photo preview (manual mode) -->
       <div class="px-4 py-2 flex gap-2 overflow-x-auto no-scrollbar">
         <template v-if="proofMode === 'ai'">
-          <div v-for="item in bin" :key="item.id" class="flex-shrink-0 bg-gray-800 rounded-xl px-3 py-1.5 flex items-center gap-1.5">
-            <span class="text-sm">{{ trashEmoji(item.class) }}</span>
-            <span class="text-white text-xs capitalize">{{ item.class }}</span>
-            <span class="text-xs font-bold" style="color:#6EAE21">+{{ item.points }}</span>
+          <!-- Show grouped summary in proof modal too -->
+          <div v-for="group in groupedBin" :key="group.class"
+            class="flex-shrink-0 bg-gray-800 rounded-xl px-3 py-1.5 flex items-center gap-1.5 relative">
+            <span class="text-sm">{{ trashEmoji(group.class) }}</span>
+            <span class="text-white text-xs capitalize">{{ group.class }}</span>
+            <span v-if="group.count > 1" class="text-xs font-bold" style="color:#6DCEDA">×{{ group.count }}</span>
+            <span class="text-xs font-bold" style="color:#6EAE21">+{{ group.totalPoints }}</span>
           </div>
         </template>
         <template v-else>
@@ -227,10 +246,27 @@ const { latitude, longitude, getPosition } = useGeolocation()
 
 const scanMode = ref('ai') // 'ai' | 'manual'
 
-// AI bin
+// ── Bin — flat list of individual detections ──────────────────
+// Each entry: { id, class, points, trackerId? }
 const bin = ref([])
-const addedTrackerIds = new Set()  // ← track by tracker_id, not class+time
+const addedTrackerIds = new Set()
 let idCounter = 0
+
+// ── Grouped bin — one card per class with count + summed points ──
+const groupedBin = computed(() => {
+  const map = {}
+  bin.value.forEach(item => {
+    const key = item.class
+    if (!map[key]) {
+      map[key] = { class: key, count: 0, totalPoints: 0 }
+    }
+    map[key].count++
+    map[key].totalPoints += item.points
+  })
+  return Object.values(map)
+})
+
+const totalBinCount  = computed(() => bin.value.length)
 const totalBinPoints = computed(() => bin.value.reduce((s, i) => s + i.points, 0))
 
 // Manual capture
@@ -238,27 +274,37 @@ const manualPhoto = ref(null)
 const manualBlob  = ref(null)
 
 // Proof modal
-const showProofModal   = ref(false)
-const selfieCanvasRef  = ref(null)
-const selfieDataUrl    = ref(null)
-const selfieBlob       = ref(null)
-const proofMode        = ref('ai')
-const submitting       = ref(false)
-const showSuccess      = ref(false)
-const showHistory      = ref(false)
+const showProofModal      = ref(false)
+const selfieCanvasRef     = ref(null)
+const selfieDataUrl       = ref(null)
+const selfieBlob          = ref(null)
+const proofMode           = ref('ai')
+const submitting          = ref(false)
+const showSuccess         = ref(false)
+const showHistory         = ref(false)
 const lastSubmittedPoints = ref(0)
-const mySubmissions    = ref([])
+const mySubmissions       = ref([])
 
-const EMOJI_MAP = { trash:'🗑️',bottle:'🍾',cup:'🥤',bag:'🛍️',can:'🥫',paper:'📄',plastic:'♻️',wrapper:'🍬',cigarette:'🚬',food:'🍱',cardboard:'📦',glass:'🍶',default:'🗑️' }
-function trashEmoji(cls) { const k = Object.keys(EMOJI_MAP).find(k => cls?.toLowerCase().includes(k)); return EMOJI_MAP[k] || EMOJI_MAP.default }
-function formatDate(iso) { return new Date(iso).toLocaleDateString('en-PH', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) }
+const EMOJI_MAP = {
+  trash:'🗑️', bottle:'🍾', cup:'🥤', bag:'🛍️', can:'🥫',
+  paper:'📄', plastic:'♻️', wrapper:'🍬', cigarette:'🚬',
+  food:'🍱', cardboard:'📦', glass:'🍶', default:'🗑️'
+}
+function trashEmoji(cls) {
+  const k = Object.keys(EMOJI_MAP).find(k => cls?.toLowerCase().includes(k))
+  return EMOJI_MAP[k] || EMOJI_MAP.default
+}
+function formatDate(iso) {
+  return new Date(iso).toLocaleDateString('en-PH', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })
+}
 
+// ── Detection handler — pushes individual items into flat bin ──
 function handleDetected(results) {
   results.forEach(item => {
     const tid = item.trackerId
 
-    // if no tracker_id, fall back to class dedup
     if (tid == null) {
+      // No tracker ID: deduplicate by class (one per class max without tracker)
       const alreadyInBin = bin.value.some(b => b.class === item.class)
       if (!alreadyInBin) {
         bin.value.push({ ...item, id: ++idCounter })
@@ -266,48 +312,52 @@ function handleDetected(results) {
       return
     }
 
-    // skip if this tracked object is already in the bin
+    // With tracker ID: each unique tracked object gets its own bin slot
     if (addedTrackerIds.has(tid)) return
-
     addedTrackerIds.add(tid)
     bin.value.push({ ...item, id: ++idCounter })
   })
 }
 
-function removeFromBin(id) {
-  const item = bin.value.find(i => i.id === id)
-  if (item?.trackerId != null) addedTrackerIds.delete(item.trackerId)
-  bin.value = bin.value.filter(i => i.id !== id)
+// Remove all items of a given class from the bin
+function removeGroupFromBin(cls) {
+  bin.value
+    .filter(i => i.class === cls)
+    .forEach(i => { if (i.trackerId != null) addedTrackerIds.delete(i.trackerId) })
+  bin.value = bin.value.filter(i => i.class !== cls)
 }
 
-// in submitWithProof, after bin.value = []:
-bin.value = []
-addedTrackerIds.clear()
 // Manual: capture trash photo from live feed
 function captureManualPhoto() {
   const video = videoRef.value
   if (!video) return
   const canvas = document.createElement('canvas')
-  canvas.width = video.videoWidth; canvas.height = video.videoHeight
+  canvas.width  = video.videoWidth
+  canvas.height = video.videoHeight
   canvas.getContext('2d').drawImage(video, 0, 0)
   manualPhoto.value = canvas.toDataURL('image/jpeg', 0.85)
   canvas.toBlob(b => { manualBlob.value = b }, 'image/jpeg', 0.85)
 }
 
 function openProofCapture(mode) {
-  proofMode.value    = mode
+  proofMode.value     = mode
   selfieDataUrl.value = null
-  selfieBlob.value   = null
+  selfieBlob.value    = null
   showProofModal.value = true
 }
 
-function cancelProof() { showProofModal.value = false; selfieDataUrl.value = null }
+function cancelProof() {
+  showProofModal.value = false
+  selfieDataUrl.value  = null
+}
 
 // Capture selfie from live feed
 function captureSelfie() {
-  const video = videoRef.value; const canvas = selfieCanvasRef.value
+  const video  = videoRef.value
+  const canvas = selfieCanvasRef.value
   if (!video || !canvas) return
-  canvas.width = video.videoWidth; canvas.height = video.videoHeight
+  canvas.width  = video.videoWidth
+  canvas.height = video.videoHeight
   canvas.getContext('2d').drawImage(video, 0, 0)
   selfieDataUrl.value = canvas.toDataURL('image/jpeg', 0.85)
   canvas.toBlob(b => { selfieBlob.value = b }, 'image/jpeg', 0.85)
@@ -321,37 +371,47 @@ async function submitWithProof() {
 
     if (proofMode.value === 'ai') {
       await submissionApi.submitForReview({
-        userId: authStore.user.id,
-        items: bin.value,
+        userId:        authStore.user.id,
+        items:         bin.value,          // flat list sent to API
         proofPhotoUrl: selfieUrl,
-        latitude: latitude.value, longitude: longitude.value,
+        latitude:      latitude.value,
+        longitude:     longitude.value,
         submissionType: 'ai'
       })
       lastSubmittedPoints.value = totalBinPoints.value
+      // Clear bin after submit
       bin.value = []
+      addedTrackerIds.clear()
     } else {
-      // Manual: also upload the trash photo
       const trashPhotoUrl = await submissionApi.uploadProofPhoto(authStore.user.id, manualBlob.value)
       await submissionApi.submitForReview({
-        userId: authStore.user.id,
-        items: [{ class: 'manual', score: 1, points: 0 }],
-        proofPhotoUrl: trashPhotoUrl,
+        userId:         authStore.user.id,
+        items:          [{ class: 'manual', score: 1, points: 0 }],
+        proofPhotoUrl:  trashPhotoUrl,
         selfiePhotoUrl: selfieUrl,
-        latitude: latitude.value, longitude: longitude.value,
+        latitude:       latitude.value,
+        longitude:      longitude.value,
         submissionType: 'manual'
       })
       lastSubmittedPoints.value = 0
-      manualPhoto.value = null; manualBlob.value = null
+      manualPhoto.value = null
+      manualBlob.value  = null
     }
+
     showProofModal.value = false
     showSuccess.value    = true
     await loadHistory()
-  } catch (err) { alert(`Submission failed: ${err.message}`) }
-  finally { submitting.value = false }
+  } catch (err) {
+    alert(`Submission failed: ${err.message}`)
+  } finally {
+    submitting.value = false
+  }
 }
 
 async function loadHistory() {
-  if (authStore.user?.id) mySubmissions.value = await submissionApi.getMySubmissions(authStore.user.id)
+  if (authStore.user?.id) {
+    mySubmissions.value = await submissionApi.getMySubmissions(authStore.user.id)
+  }
 }
 
 async function toggleDetection() {
